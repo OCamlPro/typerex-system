@@ -1,0 +1,53 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                             ocp-watch                               *)
+(*                                                                     *)
+(*  Copyright 2012 OCamlPro SAS                                        *)
+(*  Developed by OCamlPro, supervised by Fabrice LE FESSANT (INRIA)    *)
+(*                                                                     *)
+(***********************************************************************)
+
+begin library "ocpstub-msgipc"
+  files = [ "msgipc_c.c" "msgipc.ml" ]
+  requires = [ "unix" string_compat ]
+end
+
+begin library "ocplib-watch"
+  files = [ "watchFunctions.ml" ]
+  requires = [ "unix" ]
+end
+
+begin program "ocp-watch-gencalls"
+  files = [ "gencalls.ml" ]
+  requires = [ "ocplib-watch" ]
+end
+
+begin program "ocp-watch"
+  pp_requires = [ "ocp-watch-gencalls:asm" ]
+
+  files = [
+    "watchTypes.ml"
+      "watchReader.ml" "watchWriter.ml"
+      "watchCommon.ml"
+      "watchSource.ml" (
+         pp = [ "%{ocp-watch-gencalls_DST_DIR}%/ocp-watch-gencalls.asm" ]
+         rule_sources = [
+           "ocp_watcher.header.c"
+           "ocp_watcher.trailer.c"
+           "md5.c"
+         ]
+       )
+      "watchInstall.ml"
+      "watchRecord.ml"
+      "watchReportCommon.ml" "watchReportAnalyze.ml"  "watchReport.ml"
+      "watchMain.ml" ]
+    requires = [ "unix" "ocpstub-msgipc" "ocplib-watch" "ocplib-subcmd"
+                   "ocp-watch-gencalls" (syntax=true) "ocplib-system"
+               ]
+end
+
+(*
+ gcc -fPIC -c -o ocp_watcher.o ocp_watcher.c
+ gcc -shared -o ocp_watcher.so ocp_watcher.o -ldl
+
+*)

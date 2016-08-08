@@ -1,0 +1,107 @@
+# ocp-watch
+=========
+
+## Architecture:
+
+ocp-watch has several modes:
+
+1/ record: in recording more, it sets the LD_PRELOAD environment
+variable (to load a simple library that intercepts many calls to
+system functions), and then spawns two processes: one is the command
+to be monitored, and the other one is the monitoring command. Both
+processes communicates through an IPC queue.  Everytime a function is
+called by the command (or a command called by it), a message is sent
+to the monitor with the arguments, to record the call, and another
+message is sent after the command has been executed with the
+result. The monitor saves all the events it receives into a log file.
+
+2/ report: this command is used to analyse the log file after the
+execution of ocp-watch in record mode. It can display the tree of the
+commands that have been executed, together with the list of files that
+have been read or written.
+
+3/ build (not implemented): in build mode, ocp-watch tries to either
+record a build, or to replay the build by executing only the commands
+whose input has changed.
+
+
+## Current implementation:
+
+### Modules:
+
+- "WatchFunctions": The list of intercepted glibc functions, with the
+  attributes.  This module is used both to generate the preloaded
+  library, and the server-side code. The attributes can be used to
+  define in a generic way the behavior of the wrapper.
+
+- "Gencalls": This module is the driver of the preprocessor used to
+  create the WatchSource module, containing all the C code to create
+  the preloaded library.
+
+- "WatchTypes": types and printers used in ocp-watch (printers should
+  probably be moved to a WatchPrint module).
+
+- "WatchReader" and "WatchWriter": function to ease reading and writing
+  messages.
+
+- "WatchCommon": misc functions
+
+- "WatchSource" and "WatchInstall": the subsystem in charge of
+  building the library to be preloaded in the ~/.ocp-watch/ directory.
+
+- "WatchRecord": the sub-system in charge of monitoring a process and
+  saving the events to a log file.
+
+- "WatchReportCommon": types and globals used in the "report" subsystem
+- "WatchReportAnalyze": analysis of the log file, especially taking care
+  of the processes that have been created, and for each process, the file
+  descriptors of the files that are manipulated.
+- "WatchReport": the driver of the "report" subsystem
+
+- "WatchMain" : the main driver, parsing the arguments and calling the
+  different behaviors of ocp-watch.
+
+### Process -> Monitor communication
+
+There are currently four messages used to send information from a process
+ to the monitor on the IPC queue:
+
+- KillMsg: sent by the main process to the monitor, to indicates that the
+   child command is dead, and that it should terminate
+
+- ProcMsg : send by a new process, to indicate to the monitor that it
+  should be monitored. The monitor should reply with a BitmapMsg, 
+  indicating the behavior of each function.
+
+- BeforeCallMsg (function_id, arguments_list) : sent by a monitored
+  process before calling the given function with the provided
+  arguments. If the function is in synchronous mode, the monitored
+  process is waiting for a reply from the monitor before executing the
+  command.
+
+- AfterCallMsg (function_id, results_list) : sent by a monitored
+  process after calling a function, to indicates the results.
+
+### Build mode
+
+The idea behind the build mode is that, without knowing anything from
+a build system, it is possible to optimize it by just observing the
+low level opterations performed by the commands. For example, the
+first time the command "ocp-watch build make all", it will call the
+"make all" command, and record all the commands that are started, and
+for each command, which files are read and which files are
+written. For read files, it will record the checksum of the file
+before the first read is done. For written files, it will record the
+content of the file at the end (or before any command tries to read
+it). For all files, it does a copy of the file, associated with its
+checksum. For directories, it will remember the list of files, and
+which directories are created or deleted. Then, using "ocp-watch
+build" will try to replay the build, checking what has changed on the
+file-system since the last build, and calling only the commands whose
+input has changed since the last build. If a command does not need to
+be replayed, the file-system is just modified in the same way as it
+would have been modified by the command (and its
+sub-commands). Sub-commands dependencies are included in command
+dependencies. A cache is used to avoid recomputing checksums when
+possible.
+

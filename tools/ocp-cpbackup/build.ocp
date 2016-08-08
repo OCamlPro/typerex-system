@@ -1,0 +1,5 @@
+
+begin program "ocp-cpbackup"
+  files = [ "cpbMain.ml" ]
+  requires = [ "unix" string_compat ]
+end

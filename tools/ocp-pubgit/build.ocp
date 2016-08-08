@@ -1,0 +1,7 @@
+
+begin program "ocp-pubgit"
+
+  files = [ "gitIndex.ml"
+              "pubMain.ml" ]
+  requires = [ "unix" "ocplib-lang" ]
+end

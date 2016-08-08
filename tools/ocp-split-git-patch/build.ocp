@@ -1,0 +1,4 @@
+begin program "ocp-splitdiff"
+    files = [ "splitGitPatch.ml" ]
+    requires = [ "ocplib-lang" "ocplib-unix" ]
+end

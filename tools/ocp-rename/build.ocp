@@ -1,0 +1,6 @@
+
+
+begin program "ocp-rename"
+    files = [ "rename.ml" ]
+    requires = [ "ocplib-system" "ocplib-lang" "ocplib-config" "ocplib-file" ]
+end

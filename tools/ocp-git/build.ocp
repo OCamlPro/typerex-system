@@ -1,0 +1,12 @@
+
+begin library "ocplib-git"
+  files = [ "gitTypes.ml" "gitCache.ml" "git.ml" ]
+        requires = [ "ocplib-lang" "ocplib-system" "ocplib-zlib"
+                       "ocplib-digest" "ocplib-config" ]
+end
+
+begin program "ocp-git"
+      files = [ "main.ml" ]
+      requires = [ "ocplib-git" ]
+      cclib = [ "-lz" ]
+end
