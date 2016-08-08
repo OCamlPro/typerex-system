@@ -1,0 +1,12 @@
+remove: [
+  [ "ocp-build" "uninstall" "-install-lib" lib "ocp-cpbackup" ]
+  [ "ocp-build" "uninstall" "-install-lib" lib "ocp-fdupes" ]
+  [ "ocp-build" "uninstall" "-install-lib" lib "ocp-git" ]
+  [ "ocp-build" "uninstall" "-install-lib" lib "ocp-pubgit" ]
+  [ "ocp-build" "uninstall" "-install-lib" lib "ocp-rename" ]
+  [ "ocp-build" "uninstall" "-install-lib" lib "ocp-watch" ]
+  [ "ocp-build" "uninstall" "-install-lib" lib "ocp-watch-gencalls" ]
+  [ "ocp-build" "uninstall" "-install-lib" lib "ocplib-git" ]
+  [ "ocp-build" "uninstall" "-install-lib" lib "ocplib-subst-worker" ]
+  [ "ocp-build" "uninstall" "-install-lib" lib "ocplib-watch" ]
+]

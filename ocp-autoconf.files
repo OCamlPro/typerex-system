@@ -11,5 +11,5 @@ autoconf/configure.ac f04fda1cd892ed5c44d57bc7f7fa2c78
 autoconf/m4/ax_compare_version.m4 ebb455a7fd6a8ba9a4e38a25c8f0b686
 autoconf/m4/ocaml.m4 bffe7da970a9e23a89b611c00360f36f
 autoconf/ocaml-config.h.in 361f7d5a23b30c6c49756a9e34c2dcf9
-opam db54b1bc2c939975172abf4447648625
+opam 9757029f624d91ae4eb830028b4637e4
 push-opam.sh 5402a44ed6301359159486da51a67d75
