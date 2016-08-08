@@ -103,7 +103,7 @@ let get_branches master =
       let rebase = ref (-1) in
       let sets = ref [] in
       let fully_merged = ref true in
-      List.iteri (fun i (commit, merge) ->
+      OcpList.iteri (fun i (commit, merge) ->
         if not merge then begin
           let branches = Sha1Map.find commit !all_commits in
           let branches =
