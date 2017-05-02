@@ -11,21 +11,21 @@ module Sha1Map = Map.Make(struct
   end)
 
 let homedir = try Sys.getenv "HOME" with Not_found -> "/tmp"
-let homedir = File.of_string homedir
+let homedir = FileGen.of_string homedir
 
 let rec iter file =
-  let git_dir = File.add_basename file ".git" in
-  if File.exists git_dir then
-    let shared_dir = File.add_basenames homedir [ ".ocp"; "git" ] in
+  let git_dir = FileGen.add_basename file ".git" in
+  if FileGen.exists git_dir then
+    let shared_dir = FileGen.add_basenames homedir [ ".ocp"; "git" ] in
     Git.read_git git_dir shared_dir
   else
-  let dirname = File.dirname file in
+  let dirname = FileGen.dirname file in
   if file == dirname then exit 0;
   iter dirname
 
 let repo () =
   try
-    iter (File.getcwd ())
+    iter (FileGen.getcwd ())
   with e ->
     Printf.eprintf "Exception %s\n%!" (Printexc.to_string e);
     exit 2
@@ -33,8 +33,8 @@ let repo () =
 let arg_usage = Printf.sprintf "%s [options], git arguments" Sys.argv.(0)
 
 let cat_file filename =
-  let file = File.of_string filename in
-  let s = File.read_file file in
+  let file = FileGen.of_string filename in
+  let s = FileGen.read_file file in
   let s = Zlib.uncompress_string s in
   Printf.printf "%s\n%!" s
 
@@ -182,7 +182,7 @@ let arg_anon file =
   match !action_arg with
       NoAction -> Arg.usage arg_list arg_usage; exit 2
     | CheckObjects ->
-      Git.check_object (File.of_string file)
+      Git.check_object (FileGen.of_string file)
 
 let _ =
   if Array.length Sys.argv < 2 then begin

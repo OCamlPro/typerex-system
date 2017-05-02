@@ -5,21 +5,21 @@ module SimpleConfig = struct
 
   let find_local basename =
     let rec iter dir =
-      let filename = File.add_basename dir basename in
-      if File.exists filename then Some filename
+      let filename = FileGen.add_basename dir basename in
+      if FileGen.exists filename then Some filename
       else
-        let dirdir = File.dirname dir in
+        let dirdir = FileGen.dirname dir in
         if dirdir == dir then None
         else iter dirdir
     in
-    let dir = File.getcwd () in
+    let dir = FileGen.getcwd () in
     iter dir
 
   let create_local_config basename =
     let file =
       match find_local basename with
       | Some file -> file
-      | None -> File.of_string basename
+      | None -> FileGen.of_string basename
     in
     SimpleConfig.create_config_file file
 
@@ -28,7 +28,7 @@ module SimpleConfig = struct
 open SimpleConfig.Op
 
 let local_config_basename =  ".ocp-renamings"
-let local_config_file = File.of_string local_config_basename
+let local_config_file = FileGen.of_string local_config_basename
 let config = SimpleConfig.create_config_file local_config_file
 
 let remove_strings = SimpleConfig.create_option config
@@ -43,12 +43,14 @@ let replace_strings = SimpleConfig.create_option config
                                    SimpleConfig.string_option))) []
 
 let _ =
-  let subst = StringSubst.empty_subst () in
+  let subst = OcpSubst.empty_subst () in
   let remove_string new_string old_string =
-    StringSubst.add_to_subst subst old_string new_string
+    OcpSubst.add_to_subst subst old_string new_string
   in
   let not_fake = ref true in
   let forced = ref false in
+  let recursive = ref false in
+  let rename_directories = ref false in
   let arg1 = ref "" in
   let arg2 = ref "" in
   let arg_list = [
@@ -61,13 +63,15 @@ let _ =
                      Arg.String ( (:=) arg2);
                      Arg.Unit (fun () ->
                          remove_string !arg2 !arg1
-                       ) ], "OLD NEW Replace OLD by NEW";
+                       ) ], "SRC DST Replace string SRC by DST";
     "-save", Arg.Unit (fun () ->
-        SimpleConfig.save config), " Save .ocp-renamings file";
+      SimpleConfig.save config), " Save .ocp-renamings file";
+    "-r", Arg.Set recursive, " Recurse in sub-directories";
+    "-D", Arg.Set rename_directories, " Also rename directories";
   ] in
 
   let rename dirname basename =
-    let (nocc, new_basename) = StringSubst.iter_subst subst basename in
+    let (nocc, new_basename) = OcpSubst.iter_subst subst basename in
     if new_basename <> basename then begin
       let old_filename = Filename.concat dirname basename in
       let new_filename = Filename.concat dirname new_basename in
@@ -99,15 +103,25 @@ let _ =
       List.iter (fun (old_s, new_s) ->
           remove_string new_s old_s) !!replace_strings;
   in
+
   let rec arg_anon dirname =
     if !need_init then read_config ();
-    let files = Sys.readdir dirname in
-    Array.iter (fun basename ->
+    if Sys.is_directory dirname then
+      let files = Sys.readdir dirname in
+      Array.iter (fun basename ->
         let filename = Filename.concat dirname basename in
-        if Sys.is_directory filename then arg_anon filename
+        if Sys.is_directory filename then begin
+          if !recursive then arg_anon filename;
+          if !rename_directories then
+            rename dirname basename
+        end
         else
           rename dirname basename
       ) files
+    else
+      let basename = Filename.basename dirname in
+      let dirname = Filename.dirname dirname in
+      rename dirname basename
   in
   let arg_usage = "ocp-rename [OPTIONS] DIRS" in
-  Arg.parse arg_list arg_anon arg_usage
+  Arg.parse (Arg.align arg_list) arg_anon arg_usage

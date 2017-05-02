@@ -27,12 +27,12 @@ let _ =
   assert (String.length magic_v1 = 20)
 
 let filename git_dir =
-  File.add_basenames git_dir ["ocp-git.cache"]
+  FileGen.add_basenames git_dir ["ocp-git.cache"]
 
 let read git_dir =
   let file = filename git_dir in
-  if not (File.exists file) then raise Not_found;
-  let ic = File.open_in file in
+  if not (FileGen.exists file) then raise Not_found;
+  let ic = FileGen.open_in file in
   try
     let magic = read_magic ic in
     if magic <> magic_v1 then raise (BadMagic magic);
@@ -45,7 +45,7 @@ let read git_dir =
 
 let write t =
   if t.git_updated then
-    let oc = File.open_out (filename t.git_dir) in
+    let oc = FileGen.open_out (filename t.git_dir) in
     output_string oc magic_v1;
     t.git_updated <- false;
     output_value oc t;
