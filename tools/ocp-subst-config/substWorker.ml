@@ -15,7 +15,7 @@
   Substitute strings from a config file.
 *)
 
-open StringSubst
+open OcpSubst
 
 let output_arg = ref None
 let output_suffix_arg = ref None

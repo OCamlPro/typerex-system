@@ -1,9 +1,9 @@
 
-open StringCompat
+open OcpCompat
 
 type repo = {
-  git_dir : File.t;
-  git_shared_dir : File.t;
+  git_dir : FileGen.t;
+  git_shared_dir : FileGen.t;
   mutable git_heads : branch StringMap.t;
   mutable git_remotes : remote StringMap.t;
   mutable git_objects : (Sha1.t, git_object) Hashtbl.t;
@@ -68,7 +68,7 @@ and tree_entry = {
 }
 
 and idx_file = {
-  idx_filename : File.t;
+  idx_filename : FileGen.t;
   idx_version : int;
   idx_size : int;
   idx_sha1s : Sha1.t array;
@@ -80,7 +80,7 @@ and idx_file = {
 
 and pack_file = {
   pack_git : repo;
-  pack_filename : File.t;
+  pack_filename : FileGen.t;
   pack_version : int;
   mutable pack_objects : pack_object array;
   pack_idx : idx_file;

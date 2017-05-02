@@ -74,8 +74,8 @@ end
 
 
 let read_pack_idx file =
-(*  Printf.fprintf stderr "file = %s\n%!" (File.to_string file); *)
-  let s = File.read_file file in
+(*  Printf.fprintf stderr "file = %s\n%!" (FileGen.to_string file); *)
+  let s = FileGen.read_file file in
   let _len = String.length s in
 (*  Printf.fprintf stderr "%d %d %d %d\n%!"
     (int_of_char s.[0])
@@ -173,14 +173,14 @@ let sha1_basenames sha1 =
 
 let find_object_file t sha1 =
   let basenames = sha1_basenames sha1 in
-  let filename = File.add_basenames t.git_dir
+  let filename = FileGen.add_basenames t.git_dir
     ("objects" :: basenames) in
-  if File.exists filename then
+  if FileGen.exists filename then
     Some filename
   else
-    let filename = File.add_basenames t.git_shared_dir
+    let filename = FileGen.add_basenames t.git_shared_dir
       ( "objects" :: basenames ) in
-    if File.exists filename then
+    if FileGen.exists filename then
       Some filename
     else
       None
@@ -197,14 +197,14 @@ let find_name t name =
     git_name
 
 let check_object file =
-  Printf.fprintf stderr "Checking file %s\n%!" (File.to_string file);
-  let sha1 = File.basename file in
-  let s = File.read_file file in
+  Printf.fprintf stderr "Checking file %s\n%!" (FileGen.to_string file);
+  let sha1 = FileGen.basename file in
+  let s = FileGen.read_file file in
   let s = Zlib.uncompress_string s in
   let digest = Sha1.to_hex (Sha1.string s) in
   if String.sub digest 2 38 <> sha1 then begin
     Printf.fprintf stderr "Error with object %s: uncompressed digest %s\n"
-     (File.to_string file)  digest;
+     (FileGen.to_string file)  digest;
     Printf.fprintf stderr "Content (%d): [%s]\n%!" (String.length s) s;
     exit 2
   end
@@ -234,11 +234,11 @@ let rec read_object t sha1 =
         Some filename ->
         if !verbose > 0 then begin
           if !verbose > 1 then
-            Printf.eprintf "Reading object %s...%!" (File.to_string filename)
+            Printf.eprintf "Reading object %s...%!" (FileGen.to_string filename)
           else
           Printf.eprintf ".%!";
         end;
-        let s0 = File.read_file filename in
+        let s0 = FileGen.read_file filename in
         let s = Zlib.uncompress_string s0 in
         let digest2 = Sha1.string s in
         assert (digest2 = sha1);
@@ -317,8 +317,8 @@ end
 
 
 let read_pack_pack t file idx =
-(*  Printf.fprintf stderr "file = %s\n%!" (File.to_string file); *)
-  let s = File.read_file file in
+(*  Printf.fprintf stderr "file = %s\n%!" (FileGen.to_string file); *)
+  let s = FileGen.read_file file in
   let len = String.length s in
   assert (s.[0] = 'P' &&
       s.[1] = 'A' && s.[2] = 'C' && s.[3] = 'K');
@@ -515,15 +515,15 @@ void *patch_delta(const void *src_buf, unsigned long src_size,
 
 let read_branch t name remote file =
   if !verbose > 0 then
-    Printf.eprintf "branch to read %s:%!" (File.to_string file);
-  let s = File.read_file file in
+    Printf.eprintf "branch to read %s:%!" (FileGen.to_string file);
+  let s = FileGen.read_file file in
 (*  Printf.eprintf "content: %s\n%!" s; *)
   if OcpString.starts_with s "ref:" then None else
   let sha1 = Sha1.of_hex s in
-(*  Printf.fprintf stderr "read_branch %s\n%!" (File.to_string file); *)
+(*  Printf.fprintf stderr "read_branch %s\n%!" (FileGen.to_string file); *)
   let o = read_object t sha1 in
   if !verbose > 0 then
-    Printf.eprintf "done with branch %s\n%!" (File.to_string file);
+    Printf.eprintf "done with branch %s\n%!" (FileGen.to_string file);
   Some {
     branch_name = name;
     branch_object = o;
@@ -533,7 +533,7 @@ let read_branch t name remote file =
 
 let read_from_pack filename pos size =
 (*  Printf.fprintf stderr "read_from_pack...\n%!"; *)
-  let s = File.read_subfile filename pos size in
+  let s = FileGen.read_subfile filename pos size in
   let s = Zlib.uncompress_string s in
 (*  Printf.fprintf stderr "read_from_pack done\n%!"; *)
   s
@@ -547,15 +547,15 @@ let save_object dir sha1 kind content =
   let s = Zlib.compress_string s in
   assert (digest = sha1);
   let basenames = sha1_basenames sha1 in
-  let filename = File.add_basenames dir
+  let filename = FileGen.add_basenames dir
     ( "objects" :: basenames ) in
-  let dirname = File.dirname filename in
-  Dir.make_all dirname;
-  File.write_file filename s
+  let dirname = FileGen.dirname filename in
+  FileDir.make_all dirname;
+  FileGen.write_file filename s
 
 let gen_from_delta git_dir sha1 delta filename =
   Printf.fprintf stderr "gen_from_delta %s...\n%!" (Sha1.to_hex sha1);
-  let source = File.read_file filename in
+  let source = FileGen.read_file filename in
   let source = Zlib.uncompress_string source in
   let (header, source) = OcpString.cut_at source '\000' in
   let (kind, source_size) = OcpString.cut_at header ' ' in
@@ -635,20 +635,20 @@ let gen_from_delta git_dir sha1 delta filename =
   assert (digest = sha1);
   let s = Zlib.compress_string s in
   let basenames = sha1_basenames sha1 in
-  let filename = File.add_basenames git_dir
+  let filename = FileGen.add_basenames git_dir
     ( "objects" :: basenames ) in
-  let dirname = File.dirname filename in
-  Dir.make_all dirname;
-  File.write_file filename s
+  let dirname = FileGen.dirname filename in
+  FileDir.make_all dirname;
+  FileGen.write_file filename s
 
 
 
 
 let read_git git_dir git_shared_dir =
   if !verbose > 0 then
-    Printf.fprintf stderr "Found git dir in %s\n%!" (File.to_string git_dir);
+    Printf.fprintf stderr "Found git dir in %s\n%!" (FileGen.to_string git_dir);
 
-  let _config = PythonConfig.read (File.add_basename git_dir "config") in
+  let _config = PythonConfig.read (FileGen.add_basename git_dir "config") in
   if !verbose > 0 then
     Printf.eprintf "Read config file\n%!";
 
@@ -668,18 +668,18 @@ let read_git git_dir git_shared_dir =
   in
 
   (* start with pack files *)
-  let pack_dir = File.add_basenames git_dir ["objects"; "pack" ] in
+  let pack_dir = FileGen.add_basenames git_dir ["objects"; "pack" ] in
   let sha1_table = Hashtbl.create 1111 in
 
   if !verbose > 0 then
     Printf.eprintf "Reading pack files...\n%!";
-  Dir.iter (fun name ->
+  FileDir.iter (fun name ->
     if Filename.check_suffix name ".idx" then
       let pack_name = Filename.chop_suffix name ".idx" in
       if not (StringMap.mem pack_name t.git_packs) then
-        let idx_filename = File.add_basename pack_dir name in
+        let idx_filename = FileGen.add_basename pack_dir name in
         let idx = read_pack_idx idx_filename in
-        let pack_filename = File.add_basename pack_dir
+        let pack_filename = FileGen.add_basename pack_dir
           (pack_name ^ ".pack") in
         let pack = read_pack_pack t pack_filename idx in
         t.git_packs <- StringMap.add pack_name pack t.git_packs;
@@ -765,23 +765,23 @@ let read_git git_dir git_shared_dir =
   if !verbose > 0 then
     Printf.fprintf stderr "Pack files expansed\n%!";
 
-  let refs_dir = File.add_basename git_dir "refs" in
-  let heads_dir = File.add_basename refs_dir "heads" in
-  Dir.iter (fun name ->
-    match read_branch t name None (File.add_basename heads_dir name) with
+  let refs_dir = FileGen.add_basename git_dir "refs" in
+  let heads_dir = FileGen.add_basename refs_dir "heads" in
+  FileDir.iter (fun name ->
+    match read_branch t name None (FileGen.add_basename heads_dir name) with
         None -> assert false
       | Some b ->
           t.git_heads <- StringMap.add name b t.git_heads
   ) heads_dir;
-  let remotes_dir = File.add_basename refs_dir "remotes" in
-  Dir.iter (fun remote ->
+  let remotes_dir = FileGen.add_basename refs_dir "remotes" in
+  FileDir.iter (fun remote ->
     if !verbose > 0 then
       Printf.fprintf stderr "remote : %s\n%!" remote;
-    let remote_dir = File.add_basename remotes_dir remote in
+    let remote_dir = FileGen.add_basename remotes_dir remote in
     let r = { remote_name = remote; remote_branches = StringMap.empty } in
     t.git_remotes <- StringMap.add remote r t.git_remotes;
-    Dir.iter (fun name ->
-      match  read_branch t name (Some r) (File.add_basename remote_dir name) with
+    FileDir.iter (fun name ->
+      match  read_branch t name (Some r) (FileGen.add_basename remote_dir name) with
           None -> ()
         | Some b ->
           r.remote_branches <- StringMap.add name b r.remote_branches
